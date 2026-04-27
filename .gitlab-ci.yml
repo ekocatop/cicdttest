@@ -1,0 +1,83 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .npm/
+
+build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+    - npx playwright install --with-deps
+    - npm run build || echo "No build script defined"
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+test:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+    - npx playwright install --with-deps
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+      - test-results/
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  dependencies:
+    - build
+
+deploy:
+  stage: deploy
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+    - echo "Deploy step - customize this for your deployment target"
+    # Example: npm run deploy
+    # Or: deploy to AWS, Vercel, Netlify, Heroku, etc.
+  environment:
+    name: production
+    url: https://your-domain.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  dependencies:
+    - test
+  when: manual
+
+# Optional: Staging deployment
+deploy:staging:
+  stage: deploy
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - npm ci
+    - echo "Staging deploy step"
+  environment:
+    name: staging
+    url: https://staging.your-domain.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+  dependencies:
+    - test
+  when: manual
