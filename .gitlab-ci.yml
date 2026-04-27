@@ -55,8 +55,7 @@ deploy:
   script:
     - npm ci
     - echo "Deploy step - customize this for your deployment target"
-    # Example: npm run deploy
-    # Or: deploy to AWS, Vercel, Netlify, Heroku, etc.
+
   environment:
     name: production
     url: https://your-domain.com
